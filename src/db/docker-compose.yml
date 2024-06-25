@@ -1,0 +1,97 @@
+version: '3.8'
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432  # make sure you don't have another container running on 5432
+
+    environment:
+      - POSTGRES_DB=chaiDB123
+      - POSTGRES_USER=ekaspreet
+      - POSTGRES_PASSWORD=chaipassword
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+
+# CREATE DATABASE chaiDB123;
+
+# CREATE TABLE users (
+#     id SERIAL PRIMARY KEY,
+#     firstName VARCHAR(255) NOT NULL,
+#     lastName VARCHAR(255),
+#     password VARCHAR(255) NOT NULL,
+#     email VARCHAR(255) NOT NULL,
+#     phoneNo VARCHAR(255),
+#     isActive BOOLEAN,
+#     role VARCHAR(255),
+#     gender VARCHAR(255),
+#     age INTEGER,
+#     address VARCHAR(255),
+#     occupation VARCHAR(255)
+# )
+
+
+
+# INSERT INTO
+#     users(
+#         firstName,
+#         lastName,
+#         email,
+#         phoneNo,
+#         password,
+#         isActive,
+#         role,
+#         gender,
+#         age,
+#         address,
+#         occupation
+#     )
+# VALUES
+#     (
+#         'Jane',
+#         'Smith',
+#         'jane.smith@example.com',
+#         '+91 7856128211',
+#         'password456',
+#         false,
+#         'user',
+#         'female',
+#         25,
+#         '456 Elm St, Anytown, USA',
+#         'Graphic Designer'
+#     ),
+#     (
+#         'Alice',
+#         'Johnson',
+#         'alice.johnson@example.com',
+#         '+91 7718228211',
+#         'password789',
+#         true,
+#         'user',
+#         'female',
+#         28,
+#         '789 Pine St, Anytown, USA',
+#         'Project Manager'
+#     ),
+#     (
+#         'John',
+#         'Doe',
+#         'john.doe@example.com',
+#         '+91 9856128211',
+#         'password123',
+#         true,
+#         'admin',
+#         'male',
+#         30,
+#         '123 Main St, Anytown, USA',
+#         'Software Developer'
+#     )
+
+
