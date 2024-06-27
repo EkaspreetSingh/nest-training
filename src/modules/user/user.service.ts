@@ -2,142 +2,93 @@ import { HttpException, Injectable, NotFoundException } from "@nestjs/common";
 import { User } from "./user.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import * as bcrypt from 'bcrypt';
 
+const saltOrRounds = 10;
 
-@Injectable ()
-
+@Injectable()
 export default class UserService {
+  constructor() {}
 
-  private users: User[] = [];
-  private idCounter: number = 1;
-
-  constructor() {
-    this.users = [
-        {
-          id: this.idCounter++,
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          phoneNo: '+91 9856128211',
-          password: 'password123',
-          isActive: true,
-          role: 'admin',
-          gender: 'male',
-          age: 30,
-          address: '123 Main St, Anytown, USA',
-          occupation: 'Software Developer',
-        },
-        {
-          id: this.idCounter++,
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@example.com',
-          phoneNo: '+91 7856128211',
-          password: 'password456',
-          isActive: false,
-          role: 'user',
-          gender: 'female',
-          age: 25,
-          address: '456 Elm St, Anytown, USA',
-          occupation: 'Graphic Designer',
-        },
-        {
-          id: this.idCounter++,
-          firstName: 'Alice',
-          lastName: 'Johnson',
-          email: 'alice.johnson@example.com',
-          phoneNo: '+91 7718228211',
-          password: 'password789',
-          isActive: true,
-          role: 'user',
-          gender: 'female',
-          age: 28,
-          address: '789 Pine St, Anytown, USA',
-          occupation: 'Project Manager',
-        },
-      ];
+  async isEmailAlreadyExists(email: string): Promise<boolean> {
+    const user = await User.findOne({ where: { email } });
+    return !!user;
   }
 
-  isEmailAlreadyExsists(email: string): boolean {
-    return this.users.some(user => user.email === email);
-  }
-
-  findAll (role?: 'user' | 'admin') {
+  async findAll(role?: 'user' | 'admin'): Promise<User[]> {
     if (role) {
-      const resultUser = this.users.filter(user => user.role === role);
-      if(resultUser.length === 0) {
-        throw new NotFoundException(`User with role ${role} not found`);
+      const resultUser = await User.findAll({ where: { role } });
+      if (resultUser.length === 0) {
+        throw new NotFoundException(`Users with role ${role} not found`);
       }
       return resultUser;
-    }
-    else {
-      return this.users;
+    } else {
+      return User.findAll();
     }
   }
 
-  create (createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      if(this.isEmailAlreadyExsists(createUserDto.email)) {        
-        console.log("bad request")
-        throw new HttpException(`User with email ${createUserDto.email} already exists`,400);
+      if (await this.isEmailAlreadyExists(createUserDto.email)) {
+        throw new HttpException(`User with email ${createUserDto.email} already exists`, 400);
       }
-      const newUser : User = { id: this.idCounter++, ...createUserDto };
-      this.users.push(newUser);
+      const hashedPassword = await bcrypt.hash(createUserDto.password, saltOrRounds);
+      const newUser = await User.create({ ...createUserDto, password: hashedPassword });
       return newUser;
-    }
-    catch (error) {
-      return error;
+    } catch (err) {
+      console.log(err);
+      throw new HttpException(err.message, 500);
     }
   }
 
-  findOne(id: number) {
-    try {
-      const user = this.users.find(user => user.id == id);
-      if (!user) {
-        throw new NotFoundException(`User with id ${id} not found`);
-      }
-      return user;
+  async getUserById(id: number): Promise<User> {
+    const user = await User.findByPk(id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
     }
-    catch (error) {
-      throw error;
-    }
+    return user;
   }
-    
-  update(id: number, updateUserDto: UpdateUserDto) {
+  async getUserByEmail(email: string): Promise<User> {
+    const user = await User.findOne({where:{email}});
+    if (!user) {
+      throw new NotFoundException(`User with id ${email} not found`);
+    }
+    return user;
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     try {
-      if(this.isEmailAlreadyExsists(updateUserDto.email)) {        
-        console.log("bad request")
-        throw new HttpException(`User with email ${updateUserDto.email} already exists`,400);
+
+      if (updateUserDto.email && await this.isEmailAlreadyExists(updateUserDto.email)) {
+        throw new HttpException(`User with email ${updateUserDto.email} already exists`, 400);
       }
-      if(updateUserDto.age && updateUserDto.age < 0) {
-        throw new HttpException(`Age cannot be negetive`,400);
-        
+      if (updateUserDto.age && updateUserDto.age < 0) {
+        throw new HttpException(`Age cannot be negative`, 400);
       }
-      const userIndex = this.users.findIndex(user => user.id == id);
-      if (userIndex === -1) {
+      const [numberOfAffectedRows, [updatedUser]] = await User.update(updateUserDto, {
+        where: { id },
+        returning: true,
+      });
+      if (numberOfAffectedRows === 0) {
         throw new NotFoundException(`User with id ${id} not found`);
       }
-      const updatedUser = { ...this.users[userIndex], ...updateUserDto };
-      this.users[userIndex] = updatedUser;
       return updatedUser;
     }
-    catch (error) {
-      return error;
+    catch (err) {
+      return err.message
     }
   }
 
-  remove(id: number) {
+  async remove(id: number): Promise<{ message: string }> {
     try {
-      const userIndex = this.users.findIndex(user => user.id == id);
-      if (userIndex === -1) {
+      const numberOfDeletedRows = await User.destroy({ where: { id } });
+      if (numberOfDeletedRows === 0) {
         throw new NotFoundException(`User with id ${id} not found`);
       }
-      this.users.splice(userIndex, 1);
       return { message: `User with id ${id} removed` };
     }
-    catch (error) {
-      throw error;
+    catch (err) {
+      return err.message
     }
   }
-
 }

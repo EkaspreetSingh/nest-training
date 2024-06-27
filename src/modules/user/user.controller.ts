@@ -1,17 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, Res } from "@nestjs/common";
 import UserService from "./user.service";
-import { User } from "./user.entity";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { CreateUserDto } from "./dto/create-user.dto";
-
+import { AuthService } from "src/auth/auth.service";
+import { Response } from "express";
+import { LoginUserDto } from "./dto/login-user.dto";
 
 @Controller('user')
 export class UserController {
-    // constructor(private userService : UserService) {}
-    constructor(private readonly userService : UserService) {}
+    constructor(
+        private readonly userService : UserService,
+        private authService: AuthService
+    ) {}
 
     @Get()
-    findAlL(@Query('role') role?: 'user' | 'admin') : User[] {
+    findAlL(@Query('role') role?: 'user' | 'admin')  {
         return this.userService.findAll(role);
     }
 
@@ -22,7 +25,7 @@ export class UserController {
 
     @Get(':id')
     findOne(@Param('id') id: number) {
-        return this.userService.findOne(id);
+        return this.userService.getUserById(id);
     }
 
     @Put(':id')
@@ -35,4 +38,9 @@ export class UserController {
         return this.userService.remove(id);
     }
 
+    // @HttpCode(HttpStatus.OK)
+    @Post('login')
+    async signIn(@Body() loginUserDto: LoginUserDto, @Res({passthrough:true}) res: Response) {
+        return this.authService.signIn(loginUserDto, res);
+    }
 }
