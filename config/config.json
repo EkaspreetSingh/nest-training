@@ -1,0 +1,9 @@
+{
+  "development": {
+    "username": "ekaspreet",
+    "password": "chaipassword",
+    "database": "migrations-task",
+    "host": "localhost",
+    "dialect": "postgres"
+  }
+}
